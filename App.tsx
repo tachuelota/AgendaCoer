@@ -409,7 +409,16 @@ const App: React.FC = () => {
 
     // Login Guard
     if (!session) {
-        return <Login />;
+        return (
+            <>
+                <Login onOpenDirectory={() => setIsDirectoryOpen(true)} />
+                <DirectoryModal
+                    isOpen={isDirectoryOpen}
+                    onClose={() => setIsDirectoryOpen(false)}
+                    isAdmin={false}
+                />
+            </>
+        );
     }
 
     return (
