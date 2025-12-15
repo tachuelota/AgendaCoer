@@ -423,10 +423,6 @@ const App: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-brand-bg text-gray-800 font-sans">
-            <div className='bg-white shadow-sm p-2 flex justify-end items-center px-8 border-b'>
-                <span className='text-sm text-gray-600 mr-4'>Usuario: {user?.email}</span>
-                <button onClick={() => signOut()} className='text-red-500 hover:text-red-700 text-sm font-semibold'>Cerrar Sesión</button>
-            </div>
             <Header
                 currentView={currentView}
                 onViewChange={(view) => {
