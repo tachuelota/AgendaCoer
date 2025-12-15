@@ -3,7 +3,13 @@ import { GoogleGenAI, GroundingMetadata } from "@google/genai";
 
 // FIX: Per coding guidelines, the API key must be read directly from process.env.API_KEY
 // during client initialization, and we should assume it is always available.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.GEMINI_API_KEY;
+
+if (!apiKey) {
+    console.warn("Gemini API Key is missing. Verification features will not work.");
+}
+
+const ai = new GoogleGenAI({ apiKey: apiKey || 'dummy-key-for-init' });
 
 export async function verifyContactPosition(name: string, position: string): Promise<{ text: string; sources: string[] }> {
     try {
@@ -20,11 +26,11 @@ export async function verifyContactPosition(name: string, position: string): Pro
         const text = response.text ?? 'No response text found.';
 
         const groundingMetadata: GroundingMetadata | undefined = response.candidates?.[0]?.groundingMetadata;
-        
+
         const sources = groundingMetadata?.groundingChunks
             ?.map(chunk => chunk.web?.uri)
             .filter((uri): uri is string => !!uri) ?? [];
-        
+
         return { text, sources };
 
     } catch (error) {

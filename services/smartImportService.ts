@@ -3,7 +3,13 @@ import { GoogleGenAI, Schema, Type } from "@google/genai";
 import * as XLSX from 'xlsx';
 import type { Contact } from '../types';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.GEMINI_API_KEY;
+
+if (!apiKey) {
+    console.warn("Gemini API Key is missing. Import features will not work.");
+}
+
+const ai = new GoogleGenAI({ apiKey: apiKey || 'dummy-key-for-init' });
 
 // Schema definition to ensure Gemini returns strict JSON matching our Contact type
 const contactSchema: Schema = {
@@ -57,19 +63,19 @@ function getExcelChunks(file: File, batchSize: number): Promise<FileChunk[]> {
                 const data = new Uint8Array(e.target?.result as ArrayBuffer);
                 const workbook = XLSX.read(data, { type: 'array' });
                 const chunks: FileChunk[] = [];
-                const ROWS_PER_CHUNK = batchSize; 
+                const ROWS_PER_CHUNK = batchSize;
 
                 workbook.SheetNames.forEach(sheetName => {
                     const worksheet = workbook.Sheets[sheetName];
                     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                    
+
                     if (jsonData.length === 0) return;
 
                     // If small enough, just one chunk
                     if (jsonData.length <= ROWS_PER_CHUNK) {
                         const csv = XLSX.utils.sheet_to_csv(worksheet);
                         if (csv.trim()) {
-                             chunks.push({
+                            chunks.push({
                                 context: `Sheet Name: ${sheetName}`,
                                 content: csv,
                                 sheetName: sheetName
@@ -84,7 +90,7 @@ function getExcelChunks(file: File, batchSize: number): Promise<FileChunk[]> {
                             const chunkData = [headers, ...slice];
                             const tempSheet = XLSX.utils.aoa_to_sheet(chunkData);
                             const csv = XLSX.utils.sheet_to_csv(tempSheet);
-                            
+
                             if (csv.trim()) {
                                 chunks.push({
                                     context: `Sheet Name: ${sheetName} (Part ${(Math.floor(i / ROWS_PER_CHUNK)) + 1})`,
@@ -95,7 +101,7 @@ function getExcelChunks(file: File, batchSize: number): Promise<FileChunk[]> {
                         }
                     }
                 });
-                
+
                 if (chunks.length === 0) {
                     reject(new Error("El archivo Excel parece estar vacío."));
                 } else {
@@ -125,7 +131,7 @@ function deduplicateContacts(contacts: Omit<Contact, 'id'>[]): Omit<Contact, 'id
     contacts.forEach(contact => {
         if (!contact.name) return;
         const normalizedName = contact.name.trim().toLowerCase();
-        
+
         if (!uniqueContacts.has(normalizedName)) {
             uniqueContacts.set(normalizedName, { ...contact });
         } else {
@@ -192,7 +198,7 @@ async function processChunk(text: string, contextNote: string, fixedTag?: string
             console.warn("JSON Parse Error in chunk, attempting repair:", error);
             // Simple repair for truncated JSON in a chunk
             const text = response.text.trim();
-             if (text.startsWith('[')) {
+            if (text.startsWith('[')) {
                 const lastObjectEnd = text.lastIndexOf('}');
                 if (lastObjectEnd !== -1) {
                     const repairedJson = text.substring(0, lastObjectEnd + 1) + ']';
@@ -212,20 +218,20 @@ async function processChunkWithRetry(text: string, contextNote: string, fixedTag
     const maxRetries = 5;
     // START WITH HIGHER DELAY: 10 seconds. 
     // Free tier is often sensitive to bursts. 10s wait clears most rolling windows.
-    let delay = 10000; 
+    let delay = 10000;
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
             return await processChunk(text, contextNote, fixedTag);
         } catch (error: any) {
             // Check specifically for Rate Limit / Quota errors
-            const isRateLimit = error.status === 429 || 
-                                error.code === 429 || 
-                                (error.message && (
-                                    error.message.includes('429') || 
-                                    error.message.includes('quota') || 
-                                    error.message.includes('RESOURCE_EXHAUSTED')
-                                ));
+            const isRateLimit = error.status === 429 ||
+                error.code === 429 ||
+                (error.message && (
+                    error.message.includes('429') ||
+                    error.message.includes('quota') ||
+                    error.message.includes('RESOURCE_EXHAUSTED')
+                ));
 
             if (isRateLimit) {
                 if (attempt < maxRetries - 1) {
@@ -253,9 +259,9 @@ export async function processFileWithGemini(file: File, batchSize: number = 20):
     try {
         // Strategy for Excel: Chunking
         if (
-            mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
+            mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
             mimeType === 'application/vnd.ms-excel' ||
-            file.name.endsWith('.xlsx') || 
+            file.name.endsWith('.xlsx') ||
             file.name.endsWith('.xls')
         ) {
             const chunks = await getExcelChunks(file, batchSize);
@@ -269,19 +275,19 @@ export async function processFileWithGemini(file: File, batchSize: number = 20):
                     // Use the Retry Wrapper
                     const extracted = await processChunkWithRetry(chunk.content, chunk.context, chunk.sheetName);
                     allContacts.push(...extracted);
-                    
+
                     // Reset consecutive failures on success
                     consecutiveFailures = 0;
 
                     // CONSERVATIVE DELAY: 6 seconds between chunks.
                     if (i < chunks.length - 1) {
-                         await wait(6000); 
+                        await wait(6000);
                     }
 
                 } catch (chunkError) {
                     console.error(`Error processing chunk ${i + 1}`, chunkError);
                     consecutiveFailures++;
-                    
+
                     if (consecutiveFailures >= 3) {
                         console.warn("Too many consecutive failures. Stopping import and returning partial results.");
                         break;
@@ -296,12 +302,12 @@ export async function processFileWithGemini(file: File, batchSize: number = 20):
                 { inlineData: { mimeType: mimeType === 'application/pdf' ? 'application/pdf' : mimeType, data: base64Data } },
                 { text: "Extract contacts to JSON. Use the filename (without extension) as a primary tag." }
             ];
-             const response = await ai.models.generateContent({
+            const response = await ai.models.generateContent({
                 model: 'gemini-2.5-flash',
                 contents: { parts: parts },
                 config: { responseMimeType: 'application/json', responseSchema: contactSchema }
             });
-            if(response.text) allContacts = JSON.parse(response.text);
+            if (response.text) allContacts = JSON.parse(response.text);
 
         } else {
             // Text/CSV (Simple single pass)
