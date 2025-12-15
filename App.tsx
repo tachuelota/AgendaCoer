@@ -14,6 +14,7 @@ import BulkActionModal from './components/BulkActionModal';
 import ImportReviewModal from './components/ImportReviewModal';
 import SettingsModal from './components/SettingsModal';
 import DeleteConfirmationModal from './components/DeleteConfirmationModal';
+import DirectoryModal from './components/DirectoryModal';
 import { PlusIcon } from './components/icons/PlusIcon';
 import { downloadCSV, downloadJSON, downloadXLSX } from './utils/exportUtils';
 import { createMailtoUrl } from './utils/messagingUtils';
@@ -71,6 +72,9 @@ const App: React.FC = () => {
         contacts: Omit<Contact, 'id'>[];
         fileName: string;
     }>({ isOpen: false, isLoading: false, contacts: [], fileName: '' });
+
+    // Directory Modal State
+    const [isDirectoryOpen, setIsDirectoryOpen] = useState(false);
 
     const loadContactsAndTags = useCallback(async () => {
         setIsLoading(true);
@@ -434,6 +438,7 @@ const App: React.FC = () => {
                 filteredContactsCount={filteredContacts.length}
                 totalContactsCount={contacts.length}
                 onOpenSettings={() => setIsSettingsOpen(true)}
+                onOpenDirectory={() => setIsDirectoryOpen(true)}
             />
 
             <main className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
@@ -545,6 +550,12 @@ const App: React.FC = () => {
                     onClose={() => setDeleteConfirmationState({ isOpen: false, contact: null })}
                 />
             )}
+
+            <DirectoryModal
+                isOpen={isDirectoryOpen}
+                onClose={() => setIsDirectoryOpen(false)}
+                isAdmin={!!session}
+            />
         </div>
     );
 };

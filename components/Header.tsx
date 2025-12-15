@@ -11,6 +11,7 @@ import { SendIcon } from './icons/SendIcon';
 import { CogIcon } from './icons/CogIcon';
 import { TableCellsIcon } from './icons/TableCellsIcon';
 import { Squares2X2Icon } from './icons/Squares2X2Icon';
+import { DirectoryIcon } from './icons/DirectoryIcon';
 import type { Filters } from '../App';
 import { initialContacts } from '../data/initialData';
 import { supabase } from '../supabaseClient';
@@ -33,9 +34,10 @@ interface HeaderProps {
     filteredContactsCount: number;
     totalContactsCount: number;
     onOpenSettings: () => void;
+    onOpenDirectory: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ currentView, onViewChange, contactViewMode, onContactViewModeChange, filters, onFiltersChange, allTags, selectedTags, onSelectedTagsChange, onImport, onExport, onBulkEmail, onBulkWhatsApp, filteredContactsCount, totalContactsCount, onOpenSettings }) => {
+const Header: React.FC<HeaderProps> = ({ currentView, onViewChange, contactViewMode, onContactViewModeChange, filters, onFiltersChange, allTags, selectedTags, onSelectedTagsChange, onImport, onExport, onBulkEmail, onBulkWhatsApp, filteredContactsCount, totalContactsCount, onOpenSettings, onOpenDirectory }) => {
     const [isTagFilterOpen, setIsTagFilterOpen] = useState(false);
     const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
     const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
@@ -269,6 +271,10 @@ const Header: React.FC<HeaderProps> = ({ currentView, onViewChange, contactViewM
                     <button onClick={() => onViewChange('tags')} className={`flex items-center gap-2 py-3 px-2 font-semibold transition-colors ${currentView === 'tags' ? 'text-brand-blue border-b-2 border-brand-blue' : 'text-gray-500 hover:text-gray-800'}`}>
                         <TagIcon className="h-5 w-5" />
                         Etiquetas
+                    </button>
+                    <button onClick={onOpenDirectory} className="flex items-center gap-2 py-3 px-2 font-semibold transition-colors text-gray-500 hover:text-brand-blue hover:bg-blue-50/50 rounded-t-lg">
+                        <DirectoryIcon className="h-5 w-5" />
+                        Directorio
                     </button>
                 </div>
 
