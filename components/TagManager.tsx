@@ -23,16 +23,16 @@ const TagManager: React.FC<TagManagerProps> = ({ tags, onAddNewTag, onEditTag, o
 
     useEffect(() => {
         const fetchCounts = async () => {
-            const counts: Record<string, number> = {};
-            for (const tag of tags) {
-                const count = await db.contacts.where('tags').equals(tag).count();
-                counts[tag] = count;
+            try {
+                const counts = await db.contacts.getTagsStats();
+                setTagCounts(counts);
+            } catch (error) {
+                console.error("Error fetching tag counts:", error);
             }
-            setTagCounts(counts);
         };
         fetchCounts();
     }, [tags]);
-    
+
     const handleEditClick = (tag: string) => {
         setEditingTag(tag);
         setNewTagName(tag);
@@ -45,7 +45,7 @@ const TagManager: React.FC<TagManagerProps> = ({ tags, onAddNewTag, onEditTag, o
             setNewTagName('');
         }
     };
-    
+
     const handleCancelEdit = () => {
         setEditingTag(null);
         setNewTagName('');
@@ -64,10 +64,10 @@ const TagManager: React.FC<TagManagerProps> = ({ tags, onAddNewTag, onEditTag, o
                     <h2 className="text-2xl font-bold text-brand-blue">Gestión de Etiquetas</h2>
                     <p className="text-sm text-gray-500 mt-1">Administra, renombra o fusiona categorías.</p>
                 </div>
-                
+
                 <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-                    <button 
-                        onClick={() => onOptimizeTags()} 
+                    <button
+                        onClick={() => onOptimizeTags()}
                         className="flex items-center gap-2 px-4 py-2 bg-purple-50 text-purple-700 border border-purple-200 rounded-md hover:bg-purple-100 transition shadow-sm text-sm font-medium"
                         title="Fusionar etiquetas duplicadas o numeradas (ej. 'Tag 1' -> 'Tag')"
                     >
@@ -76,7 +76,7 @@ const TagManager: React.FC<TagManagerProps> = ({ tags, onAddNewTag, onEditTag, o
                     </button>
 
                     <form onSubmit={handleAddNewTagSubmit} className="flex items-center gap-2 w-full sm:w-auto">
-                        <input 
+                        <input
                             type="text"
                             value={newTagInput}
                             onChange={(e) => setNewTagInput(e.target.value)}
@@ -104,7 +104,7 @@ const TagManager: React.FC<TagManagerProps> = ({ tags, onAddNewTag, onEditTag, o
                             <tr key={tag} className="hover:bg-gray-50 transition-colors">
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                     {editingTag === tag ? (
-                                        <input 
+                                        <input
                                             type="text"
                                             value={newTagName}
                                             onChange={(e) => setNewTagName(e.target.value)}

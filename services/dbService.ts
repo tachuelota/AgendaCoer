@@ -92,7 +92,29 @@ export const dbService = {
 
       if (error) throw error;
       return data || [];
+    },
+
+    async getTagsStats(): Promise<Record<string, number>> {
+      // Fetch only tags column to minimize data transfer
+      const { data, error } = await supabase
+        .from('contacts')
+        .select('tags');
+
+      if (error) throw error;
+
+      const stats: Record<string, number> = {};
+
+      data?.forEach(row => {
+        if (Array.isArray(row.tags)) {
+          row.tags.forEach((tag: string) => {
+            stats[tag] = (stats[tag] || 0) + 1;
+          });
+        }
+      });
+
+      return stats;
     }
+
   }
 };
 
