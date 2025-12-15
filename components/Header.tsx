@@ -31,10 +31,11 @@ interface HeaderProps {
     onBulkEmail: () => void;
     onBulkWhatsApp: () => void;
     filteredContactsCount: number;
+    totalContactsCount: number;
     onOpenSettings: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ currentView, onViewChange, contactViewMode, onContactViewModeChange, filters, onFiltersChange, allTags, selectedTags, onSelectedTagsChange, onImport, onExport, onBulkEmail, onBulkWhatsApp, filteredContactsCount, onOpenSettings }) => {
+const Header: React.FC<HeaderProps> = ({ currentView, onViewChange, contactViewMode, onContactViewModeChange, filters, onFiltersChange, allTags, selectedTags, onSelectedTagsChange, onImport, onExport, onBulkEmail, onBulkWhatsApp, filteredContactsCount, totalContactsCount, onOpenSettings }) => {
     const [isTagFilterOpen, setIsTagFilterOpen] = useState(false);
     const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
     const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
@@ -49,9 +50,9 @@ const Header: React.FC<HeaderProps> = ({ currentView, onViewChange, contactViewM
         setLoading(true);
         try {
             const batchSize = 50;
-            // Filter out 'id' if it exists in initialContacts to avoid conflicts with auto-increment/uuid
-            const contactsToUpload = initialContacts.map(({ id, ...rest }) => ({
-                ...rest,
+            // initialContacts doesn't have ID, so we just map it directly
+            const contactsToUpload = initialContacts.map((contact) => ({
+                ...contact,
                 created_by: user?.id
             }));
 
@@ -114,15 +115,17 @@ const Header: React.FC<HeaderProps> = ({ currentView, onViewChange, contactViewM
                                 <span className="text-sm opacity-90 hidden lg:block text-gray-600 mr-2">
                                     {user.email}
                                 </span>
-                                <button
-                                    onClick={handleInitialMigration}
-                                    disabled={loading}
-                                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-full text-xs flex items-center gap-2 shadow-sm transition-colors"
-                                    title="Migrar Data Inicial"
-                                >
-                                    <UploadIcon className="h-4 w-4" />
-                                    {loading ? 'Subiendo...' : 'Migrar Data'}
-                                </button>
+                                {totalContactsCount === 0 && (
+                                    <button
+                                        onClick={handleInitialMigration}
+                                        disabled={loading}
+                                        className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-full text-xs flex items-center gap-2 shadow-sm transition-colors"
+                                        title="Migrar Data Inicial"
+                                    >
+                                        <UploadIcon className="h-4 w-4" />
+                                        {loading ? 'Subiendo...' : 'Migrar Data'}
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => signOut()}
                                     className="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs transition-colors border border-red-200"

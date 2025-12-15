@@ -432,6 +432,7 @@ const App: React.FC = () => {
                 onBulkEmail={() => handleBulkEmail(filteredContacts)}
                 onBulkWhatsApp={() => handleBulkWhatsApp(filteredContacts)}
                 filteredContactsCount={filteredContacts.length}
+                totalContactsCount={contacts.length}
                 onOpenSettings={() => setIsSettingsOpen(true)}
             />
 
