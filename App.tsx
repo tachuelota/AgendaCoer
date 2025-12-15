@@ -152,6 +152,16 @@ const App: React.FC = () => {
         });
     }, [contacts, filters, selectedTags]);
 
+    const tagCounts = useMemo(() => {
+        const counts: Record<string, number> = {};
+        contacts.forEach(contact => {
+            contact.tags.forEach(tag => {
+                counts[tag] = (counts[tag] || 0) + 1;
+            });
+        });
+        return counts;
+    }, [contacts]);
+
     const handleSaveContact = async (contact: Contact) => {
         if (contact.id) {
             await db.contacts.update(contact.id, contact);
@@ -445,6 +455,7 @@ const App: React.FC = () => {
                 ) : (
                     <TagManager
                         tags={allTags}
+                        tagCounts={tagCounts}
                         onAddNewTag={handleAddNewTag}
                         onEditTag={handleEditTag}
                         onDeleteTag={handleDeleteTag}

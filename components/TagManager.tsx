@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect } from 'react';
-import { db } from '../services/dbService';
 import { EditIcon } from './icons/EditIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import { EyeIcon } from './icons/EyeIcon';
@@ -8,6 +7,7 @@ import { SparklesIcon } from './icons/SparklesIcon';
 
 interface TagManagerProps {
     tags: string[];
+    tagCounts: Record<string, number>;
     onAddNewTag: (tagName: string) => void;
     onEditTag: (oldTag: string, newTag: string) => Promise<void>;
     onDeleteTag: (tag: string) => Promise<void>;
@@ -15,23 +15,11 @@ interface TagManagerProps {
     onOptimizeTags: () => Promise<void>;
 }
 
-const TagManager: React.FC<TagManagerProps> = ({ tags, onAddNewTag, onEditTag, onDeleteTag, onViewTag, onOptimizeTags }) => {
-    const [tagCounts, setTagCounts] = useState<Record<string, number>>({});
+const TagManager: React.FC<TagManagerProps> = ({ tags, tagCounts, onAddNewTag, onEditTag, onDeleteTag, onViewTag, onOptimizeTags }) => {
     const [editingTag, setEditingTag] = useState<string | null>(null);
     const [newTagName, setNewTagName] = useState('');
     const [newTagInput, setNewTagInput] = useState('');
 
-    useEffect(() => {
-        const fetchCounts = async () => {
-            try {
-                const counts = await db.contacts.getTagsStats();
-                setTagCounts(counts);
-            } catch (error) {
-                console.error("Error fetching tag counts:", error);
-            }
-        };
-        fetchCounts();
-    }, [tags]);
 
     const handleEditClick = (tag: string) => {
         setEditingTag(tag);
