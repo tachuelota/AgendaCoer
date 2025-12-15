@@ -1,0 +1,5 @@
+{
+  "name": "Agenda Coer Moquegua",
+  "description": "A comprehensive contact management application for COER Moquegua, featuring full CRUD capabilities, search, filters, import/export functionality, and an AI-powered feature to verify a contact's current professional role using Google Search.",
+  "requestFramePermissions": []
+}
