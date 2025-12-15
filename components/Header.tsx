@@ -12,6 +12,9 @@ import { CogIcon } from './icons/CogIcon';
 import { TableCellsIcon } from './icons/TableCellsIcon';
 import { Squares2X2Icon } from './icons/Squares2X2Icon';
 import type { Filters } from '../App';
+import { initialContacts } from '../data/initialData';
+import { supabase } from '../supabaseClient';
+import { useAuth } from '../contexts/AuthContext';
 
 interface HeaderProps {
     currentView: 'contacts' | 'tags';
@@ -36,7 +39,36 @@ const Header: React.FC<HeaderProps> = ({ currentView, onViewChange, contactViewM
     const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
     const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
     const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const { user, signOut } = useAuth();
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleInitialMigration = async () => {
+        if (!confirm("¿Estás seguro de subir la DATA INICIAL a Supabase? Esto podría duplicar contactos si ya existen.")) return;
+
+        setLoading(true);
+        try {
+            const batchSize = 50;
+            // Filter out 'id' if it exists in initialContacts to avoid conflicts with auto-increment/uuid
+            const contactsToUpload = initialContacts.map(({ id, ...rest }) => ({
+                ...rest,
+                created_by: user?.id
+            }));
+
+            for (let i = 0; i < contactsToUpload.length; i += batchSize) {
+                const batch = contactsToUpload.slice(i, i + batchSize);
+                const { error } = await supabase.from('contacts').insert(batch);
+                if (error) throw error;
+            }
+            alert("¡Migración completada con éxito!");
+            // Optional: onRefresh(); // If passed prop
+        } catch (error: any) {
+            console.error(error);
+            alert("Error en la migración: " + error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         onFiltersChange({ ...filters, [e.target.name]: e.target.value });
@@ -48,7 +80,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, onViewChange, contactViewM
             : [...selectedTags, tag];
         onSelectedTagsChange(newSelectedTags);
     };
-    
+
     const handleImportClick = () => {
         fileInputRef.current?.click();
     };
@@ -61,13 +93,13 @@ const Header: React.FC<HeaderProps> = ({ currentView, onViewChange, contactViewM
             event.target.value = '';
         }
     };
-    
+
     const activeAdvancedFiltersCount = Object.values(filters).filter((v, i) => i > 0 && v !== '').length;
 
     // Helper class strings for active/inactive states
     const activeInputClass = "border-brand-blue bg-blue-50 ring-1 ring-brand-blue/20";
     const inactiveInputClass = "border-gray-300 bg-white";
-    
+
     const activeButtonClass = "border-brand-blue bg-blue-50 text-brand-blue";
     const inactiveButtonClass = "border-gray-300 hover:bg-gray-100 text-gray-600";
 
@@ -77,6 +109,28 @@ const Header: React.FC<HeaderProps> = ({ currentView, onViewChange, contactViewM
                 <div className="flex flex-col sm:flex-row items-center justify-between py-4 gap-4 border-b">
                     <h1 className="text-2xl sm:text-3xl font-bold text-brand-blue">
                         Agenda Coer Moquegua
+                        {user && (
+                            <div className="flex items-center gap-2 mt-2 sm:mt-0 sm:float-right text-base font-normal">
+                                <span className="text-sm opacity-90 hidden lg:block text-gray-600 mr-2">
+                                    {user.email}
+                                </span>
+                                <button
+                                    onClick={handleInitialMigration}
+                                    disabled={loading}
+                                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-full text-xs flex items-center gap-2 shadow-sm transition-colors"
+                                    title="Migrar Data Inicial"
+                                >
+                                    <UploadIcon className="h-4 w-4" />
+                                    {loading ? 'Subiendo...' : 'Migrar Data'}
+                                </button>
+                                <button
+                                    onClick={() => signOut()}
+                                    className="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs transition-colors border border-red-200"
+                                >
+                                    Salir
+                                </button>
+                            </div>
+                        )}
                     </h1>
                     {currentView === 'contacts' && (
                         <div className="w-full sm:w-auto flex flex-col sm:flex-row items-center gap-2">
@@ -94,14 +148,14 @@ const Header: React.FC<HeaderProps> = ({ currentView, onViewChange, contactViewM
 
                             {/* View Toggle Buttons */}
                             <div className="flex items-center border rounded-full overflow-hidden bg-gray-50">
-                                <button 
+                                <button
                                     onClick={() => onContactViewModeChange('card')}
                                     className={`p-2 transition-colors ${contactViewMode === 'card' ? 'bg-brand-blue text-white' : 'text-gray-500 hover:bg-gray-200'}`}
                                     title="Vista de Tarjetas"
                                 >
                                     <Squares2X2Icon className="h-5 w-5" />
                                 </button>
-                                <button 
+                                <button
                                     onClick={() => onContactViewModeChange('table')}
                                     className={`p-2 transition-colors ${contactViewMode === 'table' ? 'bg-brand-blue text-white' : 'text-gray-500 hover:bg-gray-200'}`}
                                     title="Vista de Tabla"
@@ -184,7 +238,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, onViewChange, contactViewM
                                         </div>
                                     )}
                                 </div>
-                                 <div className="relative">
+                                <div className="relative">
                                     <button onClick={() => setIsActionMenuOpen(!isActionMenuOpen)} title="Acciones en Lote" className="p-2 border rounded-full hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed" disabled={filteredContactsCount === 0}>
                                         <SendIcon className="h-5 w-5 text-gray-500" />
                                     </button>
@@ -220,46 +274,46 @@ const Header: React.FC<HeaderProps> = ({ currentView, onViewChange, contactViewM
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div>
                                 <label className={`text-xs font-semibold ${filters.position ? 'text-brand-blue' : 'text-gray-600'}`}>Cargo</label>
-                                <input 
-                                    type="text" 
-                                    name="position" 
-                                    placeholder="ej., Alcalde" 
-                                    value={filters.position} 
-                                    onChange={handleFilterChange} 
-                                    className={`w-full mt-1 px-3 py-1.5 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-brand-lightblue transition-colors text-gray-900 ${filters.position ? activeInputClass : inactiveInputClass}`} 
+                                <input
+                                    type="text"
+                                    name="position"
+                                    placeholder="ej., Alcalde"
+                                    value={filters.position}
+                                    onChange={handleFilterChange}
+                                    className={`w-full mt-1 px-3 py-1.5 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-brand-lightblue transition-colors text-gray-900 ${filters.position ? activeInputClass : inactiveInputClass}`}
                                 />
                             </div>
                             <div>
                                 <label className={`text-xs font-semibold ${filters.company ? 'text-brand-blue' : 'text-gray-600'}`}>Empresa / Institución</label>
-                                <input 
-                                    type="text" 
-                                    name="company" 
-                                    placeholder="ej., Municipalidad" 
-                                    value={filters.company} 
-                                    onChange={handleFilterChange} 
-                                    className={`w-full mt-1 px-3 py-1.5 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-brand-lightblue transition-colors text-gray-900 ${filters.company ? activeInputClass : inactiveInputClass}`} 
+                                <input
+                                    type="text"
+                                    name="company"
+                                    placeholder="ej., Municipalidad"
+                                    value={filters.company}
+                                    onChange={handleFilterChange}
+                                    className={`w-full mt-1 px-3 py-1.5 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-brand-lightblue transition-colors text-gray-900 ${filters.company ? activeInputClass : inactiveInputClass}`}
                                 />
                             </div>
                             <div>
                                 <label className={`text-xs font-semibold ${filters.phone ? 'text-brand-blue' : 'text-gray-600'}`}>Teléfono</label>
-                                <input 
-                                    type="text" 
-                                    name="phone" 
-                                    placeholder="ej., 9..." 
-                                    value={filters.phone} 
-                                    onChange={handleFilterChange} 
-                                    className={`w-full mt-1 px-3 py-1.5 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-brand-lightblue transition-colors text-gray-900 ${filters.phone ? activeInputClass : inactiveInputClass}`} 
+                                <input
+                                    type="text"
+                                    name="phone"
+                                    placeholder="ej., 9..."
+                                    value={filters.phone}
+                                    onChange={handleFilterChange}
+                                    className={`w-full mt-1 px-3 py-1.5 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-brand-lightblue transition-colors text-gray-900 ${filters.phone ? activeInputClass : inactiveInputClass}`}
                                 />
                             </div>
-                             <div>
+                            <div>
                                 <label className={`text-xs font-semibold ${filters.email ? 'text-brand-blue' : 'text-gray-600'}`}>Correo</label>
-                                <input 
-                                    type="text" 
-                                    name="email" 
-                                    placeholder="ej., @..." 
-                                    value={filters.email} 
-                                    onChange={handleFilterChange} 
-                                    className={`w-full mt-1 px-3 py-1.5 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-brand-lightblue transition-colors text-gray-900 ${filters.email ? activeInputClass : inactiveInputClass}`} 
+                                <input
+                                    type="text"
+                                    name="email"
+                                    placeholder="ej., @..."
+                                    value={filters.email}
+                                    onChange={handleFilterChange}
+                                    className={`w-full mt-1 px-3 py-1.5 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-brand-lightblue transition-colors text-gray-900 ${filters.email ? activeInputClass : inactiveInputClass}`}
                                 />
                             </div>
                         </div>
