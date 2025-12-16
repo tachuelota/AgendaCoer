@@ -112,19 +112,6 @@ const Header: React.FC<HeaderProps> = ({ currentView, onViewChange, contactViewM
                 <div className="flex flex-col sm:flex-row items-center justify-between py-4 gap-4 border-b">
                     <h1 className="text-2xl sm:text-3xl font-bold text-brand-blue">
                         Agenda Coer Moquegua
-                        {user && (
-                            <div className="flex items-center gap-2 mt-2 sm:mt-0 sm:float-right text-base font-normal">
-                                <span className="text-sm opacity-90 hidden lg:block text-gray-600 mr-2">
-                                    {user.email}
-                                </span>
-                                <button
-                                    onClick={() => signOut()}
-                                    className="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs transition-colors border border-red-200"
-                                >
-                                    Salir
-                                </button>
-                            </div>
-                        )}
                     </h1>
                     {currentView === 'contacts' && (
                         <div className="w-full sm:w-auto flex flex-col sm:flex-row items-center gap-2">
