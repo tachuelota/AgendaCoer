@@ -81,7 +81,7 @@ const App: React.FC = () => {
         try {
             let count = await db.contacts.count();
             // Only seed if empty and NOT triggered by a clear action
-            if (count === 0 && !localStorage.getItem('appHasRunBefore')) {
+            if (count === 0) {
                 await db.contacts.bulkAdd(initialContacts);
                 localStorage.setItem('appHasRunBefore', 'true');
             }
